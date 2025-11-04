@@ -17,7 +17,7 @@ class UpdateController extends Controller
     public function __construct()
     {
         $this->config = [
-            'table' => 'site_services',
+            'table' => 'services',
             'redirect_route' => 'admin.site.services.index',
         ];
     }
@@ -39,15 +39,15 @@ class UpdateController extends Controller
             'title' => 'required|max:255',
             'description' => 'nullable|string',
             'content' => 'nullable|string',
-            'category_id' => 'nullable|integer|exists:site_service_categories,id',
+            'category_id' => 'nullable|integer|exists:service_categories,id',
             'price' => 'nullable|numeric|min:0',
             'duration' => 'nullable|string|max:100',
             'image' => 'nullable|string|max:500',
             'images' => 'nullable|string',
-            'features' => 'nullable|string',
-            'process' => 'nullable|string',
-            'requirements' => 'nullable|string',
-            'deliverables' => 'nullable|string',
+            'features' => 'nullable|json',
+            'process' => 'nullable|json',
+            'requirements' => 'nullable|json',
+            'deliverables' => 'nullable|json',
             'tags' => 'nullable|string',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',

@@ -1,4 +1,4 @@
-@extends($layout ?? 'jiny-site::layouts.admin.sidebar')
+@extends($layout ?? 'jiny-service::layouts.admin.sidebar')
 
 @section('title', $config['title'])
 
@@ -166,17 +166,30 @@
                     <div class="card-body">
                         <div class="mb-3">
                             <label for="category_id" class="form-label">카테고리</label>
-                            <select class="form-control @error('category_id') is-invalid @enderror"
-                                    id="category_id"
-                                    name="category_id">
-                                <option value="">카테고리 선택</option>
-                                @foreach($categories as $category)
-                                    <option value="{{ $category->id }}"
-                                            {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                                        {{ $category->display_title }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="d-flex">
+                                <select class="form-control @error('category_id') is-invalid @enderror"
+                                        id="category_id"
+                                        name="category_id">
+                                    <option value="">카테고리 선택</option>
+                                    @if(isset($categories) && count($categories) > 0)
+                                        @foreach($categories as $category)
+                                            <option value="{{ $category->id }}"
+                                                    {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                                {{ $category->display_title }}
+                                            </option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                                <a href="{{ route('admin.service.categories.index') }}" class="btn btn-outline-info ml-2" title="카테고리 관리">
+                                    ⚙️
+                                </a>
+                            </div>
+                            @if(count($categories) === 0)
+                                <small class="text-muted">
+                                    ℹ️
+                                    사용 가능한 카테고리가 없습니다. <a href="{{ route('admin.service.categories.index') }}">카테고리를 먼저 생성하세요</a>
+                                </small>
+                            @endif
                             @error('category_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror

@@ -16,7 +16,7 @@ class ShowController extends Controller
     public function __construct()
     {
         $this->config = [
-            'table' => 'site_services',
+            'table' => 'services',
             'view' => 'jiny-service::admin.services.show',
             'title' => 'Service 상세보기',
         ];
@@ -24,16 +24,8 @@ class ShowController extends Controller
 
     public function __invoke(Request $request, $id)
     {
-        $service = DB::table($this->config['table'])
-            ->where('id', $id)
-            ->whereNull('deleted_at')
-            ->first();
-
-        if (!$service) {
-            return redirect()
-                ->route('admin.site.services.index')
-                ->with('error', 'Service를 찾을 수 없습니다.');
-        }
+        // Eloquent 모델 사용으로 변경
+        $service = \Jiny\Service\Models\SiteService::findOrFail($id);
 
         return view($this->config['view'], [
             'service' => $service,

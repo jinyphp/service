@@ -1,4 +1,4 @@
-@extends($layout ?? 'jiny-site::layouts.admin.sidebar')
+@extends($layout ?? 'jiny-service::layouts.admin.sidebar')
 
 @section('title', $config['title'])
 

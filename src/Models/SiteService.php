@@ -10,7 +10,7 @@ class SiteService extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'site_services';
+    protected $table = 'services';
 
     protected $fillable = [
         'enable',
@@ -170,27 +170,27 @@ class SiteService extends Model
      */
     public function serviceCategory()
     {
-        return $this->belongsTo(\Jiny\Service\Models\SiteServiceCategory::class, 'category_id');
+        return $this->belongsTo(\Jiny\Service\Models\ServiceCategory::class, 'category_id');
     }
 
     /**
-     * 가격 옵션들과의 관계
+     * 서비스 플랜들과의 관계
      */
     public function pricingOptions()
     {
-        return $this->hasMany(\Jiny\Service\Models\SiteServicePricing::class, 'service_id')
-            ->where('enable', true)
-            ->orderBy('pos');
+        return $this->hasMany(\Jiny\Service\Models\ServicePlan::class, 'service_id')
+            ->where('is_active', true)
+            ->orderBy('sort_order');
     }
 
     /**
-     * 기본 가격 옵션
+     * 기본 서비스 플랜
      */
     public function defaultPricing()
     {
-        return $this->hasOne(\Jiny\Service\Models\SiteServicePricing::class, 'service_id')
-            ->where('enable', true)
-            ->orderBy('pos');
+        return $this->hasOne(\Jiny\Service\Models\ServicePlan::class, 'service_id')
+            ->where('is_active', true)
+            ->orderBy('sort_order');
     }
 
     /**
@@ -202,41 +202,58 @@ class SiteService extends Model
     }
 
     /**
-     * 가격 범위 조회 (가격 옵션 기반)
+     * 가격 범위 조회 (서비스 플랜 기반)
      */
     public function scopePriceRangeFromOptions($query, $min = null, $max = null)
     {
         return $query->whereHas('pricingOptions', function ($q) use ($min, $max) {
             if ($min !== null) {
                 $q->where(function ($sq) use ($min) {
-                    $sq->where('sale_price', '>=', $min)
-                      ->orWhere(function ($ssq) use ($min) {
-                          $ssq->whereNull('sale_price')->where('price', '>=', $min);
-                      });
+                    $sq->where('monthly_price', '>=', $min)
+                      ->orWhere('quarterly_price', '>=', $min)
+                      ->orWhere('yearly_price', '>=', $min);
                 });
             }
             if ($max !== null) {
                 $q->where(function ($sq) use ($max) {
-                    $sq->where('sale_price', '<=', $max)
-                      ->orWhere(function ($ssq) use ($max) {
-                          $ssq->whereNull('sale_price')->where('price', '<=', $max);
-                      });
+                    $sq->where('monthly_price', '<=', $max)
+                      ->orWhere('quarterly_price', '<=', $max)
+                      ->orWhere('yearly_price', '<=', $max);
                 });
             }
         });
     }
 
     /**
-     * 최저가격 (가격 옵션 기반)
+     * 최저가격 (서비스 플랜 기반)
      */
     public function getMinPriceAttribute()
     {
-        $minOption = $this->pricingOptions()
-            ->selectRaw('COALESCE(sale_price, price) as current_price')
-            ->orderBy('current_price')
-            ->first();
+        $plans = $this->pricingOptions()->get();
 
-        return $minOption ? $minOption->current_price : ($this->price ?? 0);
+        if ($plans->isEmpty()) {
+            return $this->price ?? 0;
+        }
+
+        $minPrice = null;
+        foreach ($plans as $plan) {
+            $prices = array_filter([
+                $plan->monthly_price,
+                $plan->quarterly_price,
+                $plan->yearly_price
+            ], function($price) {
+                return $price > 0;
+            });
+
+            if (!empty($prices)) {
+                $planMinPrice = min($prices);
+                if ($minPrice === null || $planMinPrice < $minPrice) {
+                    $minPrice = $planMinPrice;
+                }
+            }
+        }
+
+        return $minPrice ?? 0;
     }
 
     /**
@@ -245,5 +262,78 @@ class SiteService extends Model
     public function getHasPricingOptionsAttribute()
     {
         return $this->pricingOptions()->count() > 0;
+    }
+
+    /**
+     * 서비스 가격들과의 관계
+     */
+    public function prices()
+    {
+        return $this->hasMany(\Jiny\Service\Models\ServicePrice::class, 'service_id')
+            ->where('enable', true)
+            ->orderBy('pos');
+    }
+
+    /**
+     * 활성화된 가격들
+     */
+    public function activePrices()
+    {
+        return $this->hasMany(\Jiny\Service\Models\ServicePrice::class, 'service_id')
+            ->active()
+            ->valid()
+            ->ordered();
+    }
+
+    /**
+     * 첫 번째 가격 (기본 가격 대용)
+     */
+    public function defaultPrice()
+    {
+        return $this->hasOne(\Jiny\Service\Models\ServicePrice::class, 'service_id')
+            ->where('enable', true)
+            ->orderBy('pos');
+    }
+
+    /**
+     * 인기 가격
+     */
+    public function popularPrice()
+    {
+        return $this->hasOne(\Jiny\Service\Models\ServicePrice::class, 'service_id')
+            ->where('is_popular', true)
+            ->where('enable', true);
+    }
+
+    /**
+     * 추천 가격
+     */
+    public function recommendedPrice()
+    {
+        return $this->hasOne(\Jiny\Service\Models\ServicePrice::class, 'service_id')
+            ->where('is_recommended', true)
+            ->where('enable', true);
+    }
+
+    /**
+     * 최저 가격 (서비스 가격 기반)
+     */
+    public function getMinServicePriceAttribute()
+    {
+        $prices = $this->activePrices()->get();
+
+        if ($prices->isEmpty()) {
+            return $this->price ?? 0;
+        }
+
+        return $prices->min('effective_price') ?? 0;
+    }
+
+    /**
+     * 서비스 가격이 있는지 확인
+     */
+    public function getHasServicePricesAttribute()
+    {
+        return $this->prices()->count() > 0;
     }
 }

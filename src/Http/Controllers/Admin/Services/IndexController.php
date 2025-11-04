@@ -24,7 +24,7 @@ class IndexController extends Controller
     protected function loadConfig()
     {
         $this->config = [
-            'table' => 'site_services',
+            'table' => 'services',
             'view' => 'jiny-service::admin.services.index',
             'title' => 'Services 관리',
             'subtitle' => '서비스 정보를 관리합니다.',
@@ -37,7 +37,7 @@ class IndexController extends Controller
         $query = $this->buildQuery();
         $query = $this->applyFilters($query, $request);
 
-        $services = $query->orderBy('site_services.created_at', 'desc')
+        $services = $query->orderBy('services.created_at', 'desc')
             ->paginate($this->config['per_page'])
             ->withQueryString();
 
@@ -55,12 +55,12 @@ class IndexController extends Controller
     protected function buildQuery()
     {
         return DB::table($this->config['table'])
-            ->leftJoin('site_service_categories', 'site_services.category_id', '=', 'site_service_categories.id')
+            ->leftJoin('service_categories', 'services.category_id', '=', 'service_categories.id')
             ->select(
-                'site_services.*',
-                'site_service_categories.title as category_name'
+                'services.*',
+                'service_categories.title as category_name'
             )
-            ->whereNull('site_services.deleted_at');
+            ->whereNull('services.deleted_at');
     }
 
     protected function applyFilters($query, Request $request)
@@ -68,22 +68,22 @@ class IndexController extends Controller
         if ($request->filled('search')) {
             $search = $request->get('search');
             $query->where(function ($q) use ($search) {
-                $q->where('site_services.title', 'like', "%{$search}%")
-                  ->orWhere('site_services.description', 'like', "%{$search}%")
-                  ->orWhere('site_service_categories.title', 'like', "%{$search}%");
+                $q->where('services.title', 'like', "%{$search}%")
+                  ->orWhere('services.description', 'like', "%{$search}%")
+                  ->orWhere('service_categories.title', 'like', "%{$search}%");
             });
         }
 
         if ($request->filled('category') && $request->get('category') !== 'all') {
-            $query->where('site_services.category_id', $request->get('category'));
+            $query->where('services.category_id', $request->get('category'));
         }
 
         if ($request->filled('enable') && $request->get('enable') !== 'all') {
-            $query->where('site_services.enable', $request->get('enable') === '1');
+            $query->where('services.enable', $request->get('enable') === '1');
         }
 
         if ($request->filled('featured') && $request->get('featured') !== 'all') {
-            $query->where('site_services.featured', $request->get('featured') === '1');
+            $query->where('services.featured', $request->get('featured') === '1');
         }
 
         return $query;
@@ -103,7 +103,7 @@ class IndexController extends Controller
 
     protected function getCategories()
     {
-        return DB::table('site_service_categories')
+        return DB::table('service_categories')
             ->whereNull('deleted_at')
             ->where('enable', true)
             ->orderBy('pos')

@@ -16,7 +16,7 @@ class EditController extends Controller
     public function __construct()
     {
         $this->config = [
-            'table' => 'site_services',
+            'table' => 'services',
             'view' => 'jiny-service::admin.services.edit',
             'title' => 'Service 수정',
             'subtitle' => '서비스 정보를 수정합니다.',
@@ -37,19 +37,23 @@ class EditController extends Controller
         }
 
         // 활성화된 서비스 카테고리 목록 조회
-        $categories = DB::table('site_service_categories')
+        $categories = DB::table('service_categories')
             ->whereNull('deleted_at')
             ->where('enable', true)
             ->orderBy('pos')
             ->orderBy('title')
             ->get();
 
-        // 계층 구조로 카테고리 정리
-        $categoriesHierarchy = $this->buildCategoryHierarchy($categories);
+        // 카테고리를 배열로 변환하여 display_title 추가
+        $categoriesArray = [];
+        foreach ($categories as $category) {
+            $category->display_title = $category->title;
+            $categoriesArray[] = $category;
+        }
 
         return view($this->config['view'], [
             'service' => $service,
-            'categories' => $categoriesHierarchy,
+            'categories' => $categoriesArray,
             'config' => $this->config,
         ]);
     }

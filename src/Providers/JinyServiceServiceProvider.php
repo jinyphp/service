@@ -40,8 +40,8 @@ class JinyServiceServiceProvider extends ServiceProvider
         Route::middleware(['web', 'admin'])
             ->group(__DIR__.'/../../routes/admin.php');
 
-        // Load web routes
-        Route::middleware(['web'])
-            ->group(__DIR__.'/../../routes/web.php');
+        // Load web routes (commented out due to missing controllers)
+        // Route::middleware(['web'])
+        //     ->group(__DIR__.'/../../routes/web.php');
     }
 }
